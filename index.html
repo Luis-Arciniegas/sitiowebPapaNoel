@@ -53,12 +53,14 @@
   }
   
   input[type="text"],
-  input[type="number"] {
+  input[type="number"],
+  input[type="date"] {
     width: 100%;
     padding: 8px;
     border: 1px solid var(--christmas-green);
     border-radius: 4px;
     font-size: 14px;
+    box-sizing: border-box;
   }
   
   button,
@@ -87,6 +89,7 @@
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    word-wrap: break-word;
   }
   
   th {
@@ -102,6 +105,7 @@
   
   .chart-container {
     max-width: 400px;
+    width: 100%;
     padding: 8px;
     margin: 30px auto;
     background-color: var(--snow-white);
@@ -112,6 +116,7 @@
   @media (max-width: 768px) {
     .container {
       padding: 10px;
+      max-width: 90%;
     }
     
     button,
@@ -126,13 +131,36 @@
     button {
       width: 100%;
     }
+
+    th, td {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    th, td::before {
+      content: attr(data-label);
+      font-weight: bold;
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    tr {
+      margin-bottom: 20px;
+      display: block;
+    }
   }
 </style>
 </head>
 <body>
   <div class="container">
     <h1>Papa Noel sus delicias y variedades</h1>
-    
+
+    <div class="form-group">
+      <label for="reportDate">Fecha del reporte:</label>
+      <input type="date" id="reportDate" value="" required>
+    </div>
+
     <div class="form-section">
       <form id="productForm">
         <div class="form-group">
@@ -170,13 +198,13 @@
       <table id="productTable">
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Precio de Compra</th>
-            <th>Cantidad</th>
-            <th>Precio de Venta</th>
-            <th>Ganancia</th>
-            <th>Margen</th>
-            <th>Acciones</th>
+            <th data-label="Nombre">Nombre</th>
+            <th data-label="Precio de Compra">Precio de Compra</th>
+            <th data-label="Cantidad">Cantidad</th>
+            <th data-label="Precio de Venta">Precio de Venta</th>
+            <th data-label="Ganancia">Ganancia</th>
+            <th data-label="Margen">Margen</th>
+            <th data-label="Acciones">Acciones</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -189,7 +217,7 @@
       <p>Margen de Ganancia Total: <span id="totalMargin">0.00</span>%</p>
       <p>Costos Totales: $<span id="totalCosts">0.00</span></p>
       <p>Costos fijos (Fixed Costs): $<span id="fixedCostsDisplay">0.00</span></p>
-      <p>Ganancia Neta: $<span id="netProfit">0.00</span></p> <!-- New line for Net Profit -->
+      <p>Ganancia Neta: $<span id="netProfit">0.00</span></p>
     </div>
     
     <div class="chart-container">
@@ -202,12 +230,14 @@
   <script>
     let products = [];
     let fixedCosts = 0;
-    
+
     const productForm = document.getElementById('productForm');
     const productTable = document.getElementById('productTable');
     const fixedCostsInput = document.getElementById('fixedCosts');
     const generateReportBtn = document.getElementById('generateReport');
     const fixedCostsDisplay = document.getElementById('fixedCostsDisplay');
+    
+    document.getElementById('reportDate').value = new Date().toISOString().substr(0, 10);
     
     function formatNumber(number) {
       return new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
@@ -256,7 +286,7 @@
         name: document.getElementById('productName').value,
         purchasePrice: parseFloat(document.getElementById('purchasePrice').value),
         quantity: parseInt(document.getElementById('producedQuantity').value),
-        salePrice: parseFloat(document.getElementById('salePrice').value)
+        salePrice: parseFloat(document.getElementById('salePrice').value),
       };
       
       products.push(product);
@@ -276,13 +306,13 @@
         
         const row = tbody.insertRow();
         row.innerHTML = `
-          <td>${product.name}</td>
-          <td>$${formatNumber(product.purchasePrice)}</td>
-          <td>${product.quantity}</td>
-          <td>$${formatNumber(product.salePrice)}</td>
-          <td>$${formatNumber(profit)}</td>
-          <td>${margin}%</td>
-          <td>
+          <td data-label="Nombre">${product.name}</td>
+          <td data-label="Precio de Compra">$${formatNumber(product.purchasePrice)}</td>
+          <td data-label="Cantidad">${product.quantity}</td>
+          <td data-label="Precio de Venta">$${formatNumber(product.salePrice)}</td>
+          <td data-label="Ganancia">$${formatNumber(profit)}</td>
+          <td data-label="Margen">${margin}%</td>
+          <td data-label="Acciones">
             <button class="table-btn" onclick="editProduct(${index})">Editar</button>
             <button class="table-btn" onclick="deleteProduct(${index})">Eliminar</button>
           </td>
@@ -323,13 +353,13 @@
       });
       
       const totalMargin = totalRevenue ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
-      const netProfit = totalProfit - fixedCosts; // Calculate Net Profit
+      const netProfit = totalProfit - fixedCosts;
       
       document.getElementById('totalProfit').textContent = formatNumber(totalProfit);
       document.getElementById('totalMargin').textContent = totalMargin;
       document.getElementById('totalCosts').textContent = formatNumber(totalCosts);
       fixedCostsDisplay.textContent = formatNumber(fixedCosts);
-      document.getElementById('netProfit').textContent = formatNumber(netProfit); // Update Net Profit display
+      document.getElementById('netProfit').textContent = formatNumber(netProfit);
     }
     
     function updateChart() {
@@ -372,13 +402,16 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
+      const reportDate = document.getElementById('reportDate').value;
+
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51);
-      doc.text('Reporte de PapaNoel sus delicias y variedades', 20, 20);
-
+      doc.text('Reporte de PapaNoel sus delicias y variedades', 20, 30);
       doc.setFontSize(12);
       doc.setTextColor(33, 33, 33);
-      let yPos = 40;
+      doc.text('Fecha del Reporte: ' + reportDate, 20, 40);
+      
+      let yPos = 60;
 
       products.forEach((product, index) => {
         const profit = (product.salePrice - product.purchasePrice) * product.quantity;
@@ -394,11 +427,11 @@
         doc.text(`Ganancia: $${formatNumber(profit)}`, 30, yPos + 40);
         doc.text(`Margen: ${margin}%`, 30, yPos + 50);
 
-        yPos += 70;
+        yPos += 80;
 
         if (yPos > 250) {
           doc.addPage();
-          yPos = 20;
+          yPos = 40;
         }
       });
 
