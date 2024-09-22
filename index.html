@@ -1,0 +1,419 @@
+<html><head><base href="https://papaschristmasdelights.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Papa Noel sus delicias y variedades - Sistema de Gestión</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+<style>
+  :root {
+    --christmas-red: #C41E3A;
+    --christmas-green: #165B33;
+    --christmas-gold: #F8B229;
+    --snow-white: #F0F0F0;
+    --pine-green: #1A472A;
+    --minimal-gray: #EAEAEA; 
+    --text-dark: #333;        
+  }
+
+  body {
+    font-family: 'Arial', sans-serif;
+    background-color: var(--snow-white);
+    color: var(--text-dark);
+    margin: 0;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  h1 {
+    color: var(--christmas-red);
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: normal;
+  }
+
+  .form-section, .product-list, .summary, .chart-container {
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  label {
+    color: var(--text-dark);
+    font-weight: 500;
+  }
+  
+  input[type="text"],
+  input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--christmas-green);
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  button,
+  .table-btn {
+    background-color: var(--christmas-red);
+    color: white;
+    padding: 8px 16px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+  }
+  
+  button:hover, .table-btn:hover {
+    background-color: var(--pine-green);
+    box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  th {
+    background-color: var(--christmas-red);
+    color: white;
+  }
+
+  .summary {
+    background-color: var(--minimal-gray);
+    padding: 15px;
+    border-radius: 6px;
+  }
+  
+  .chart-container {
+    max-width: 400px;
+    padding: 8px;
+    margin: 30px auto;
+    background-color: var(--snow-white);
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  @media (max-width: 768px) {
+    .container {
+      padding: 10px;
+    }
+    
+    button,
+    input {
+      font-size: 14px;
+    }
+    
+    .table-btn {
+      padding: 7px;
+    }
+    
+    button {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Papa Noel sus delicias y variedades</h1>
+    
+    <div class="form-section">
+      <form id="productForm">
+        <div class="form-group">
+          <label for="productName">Nombre del producto:</label>
+          <input type="text" id="productName" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="purchasePrice">Precio de compra:</label>
+          <input type="number" id="purchasePrice" step="0.01" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="producedQuantity">Cantidad producida:</label>
+          <input type="number" id="producedQuantity" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="salePrice">Precio de venta:</label>
+          <input type="number" id="salePrice" step="0.01" required>
+        </div>
+        
+        <button type="submit">Agregar Producto</button>
+      </form>
+      <button id="resetForm" class="table-btn">Reset Fields</button>
+    </div>
+    
+    <div class="form-group">
+      <label for="fixedCosts">Costos fijos:</label>
+      <input type="number" id="fixedCosts" step="0.01" value="0">
+    </div>
+    
+    <div class="product-list">
+      <h2>Lista de Productos</h2>
+      <table id="productTable">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Precio de Compra</th>
+            <th>Cantidad</th>
+            <th>Precio de Venta</th>
+            <th>Ganancia</th>
+            <th>Margen</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    
+    <div class="summary">
+      <h2>Resumen</h2>
+      <p>Ganancias Totales: $<span id="totalProfit">0.00</span></p>
+      <p>Margen de Ganancia Total: <span id="totalMargin">0.00</span>%</p>
+      <p>Costos Totales: $<span id="totalCosts">0.00</span></p>
+      <p>Costos fijos (Fixed Costs): $<span id="fixedCostsDisplay">0.00</span></p>
+      <p>Ganancia Neta: $<span id="netProfit">0.00</span></p> <!-- New line for Net Profit -->
+    </div>
+    
+    <div class="chart-container">
+      <canvas id="profitChart"></canvas>
+    </div>
+    
+    <button id="generateReport">Generar Reporte PDF</button>
+  </div>
+
+  <script>
+    let products = [];
+    let fixedCosts = 0;
+    
+    const productForm = document.getElementById('productForm');
+    const productTable = document.getElementById('productTable');
+    const fixedCostsInput = document.getElementById('fixedCosts');
+    const generateReportBtn = document.getElementById('generateReport');
+    const fixedCostsDisplay = document.getElementById('fixedCostsDisplay');
+    
+    function formatNumber(number) {
+      return new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
+    }
+
+    productForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (validateInputs()) {
+        addProduct();
+      }
+    });
+    
+    fixedCostsInput.addEventListener('change', function() {
+      fixedCosts = parseFloat(this.value) || 0;
+      updateSummary();
+    });
+    
+    generateReportBtn.addEventListener('click', generatePDF);
+    
+    document.getElementById('resetForm').addEventListener('click', (e) => {
+      e.preventDefault();
+      productForm.reset();
+    });
+    
+    function validateInputs() {
+      const name = document.getElementById('productName').value.trim();
+      const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
+      const quantity = parseInt(document.getElementById('producedQuantity').value);
+      const salePrice = parseFloat(document.getElementById('salePrice').value);
+    
+      if (!name || isNaN(purchasePrice) || isNaN(quantity) || isNaN(salePrice)) {
+        alert('Por favor, complete todos los campos con valores válidos.');
+        return false;
+      }
+    
+      if (purchasePrice <= 0 || quantity < 0 || salePrice <= 0) {
+        alert('Los valores de precios y cantidades deben ser positivos. La cantidad debe ser al menos 0.');
+        return false;
+      }
+    
+      return true;
+    }
+    
+    function addProduct() {
+      const product = {
+        name: document.getElementById('productName').value,
+        purchasePrice: parseFloat(document.getElementById('purchasePrice').value),
+        quantity: parseInt(document.getElementById('producedQuantity').value),
+        salePrice: parseFloat(document.getElementById('salePrice').value)
+      };
+      
+      products.push(product);
+      updateProductTable();
+      updateSummary();
+      updateChart();
+      productForm.reset();
+    }
+    
+    function updateProductTable() {
+      const tbody = productTable.querySelector('tbody');
+      tbody.innerHTML = '';
+      
+      products.forEach((product, index) => {
+        const profit = (product.salePrice - product.purchasePrice) * product.quantity;
+        const margin = ((profit / (product.salePrice * product.quantity)) * 100).toFixed(2);
+        
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td>${product.name}</td>
+          <td>$${formatNumber(product.purchasePrice)}</td>
+          <td>${product.quantity}</td>
+          <td>$${formatNumber(product.salePrice)}</td>
+          <td>$${formatNumber(profit)}</td>
+          <td>${margin}%</td>
+          <td>
+            <button class="table-btn" onclick="editProduct(${index})">Editar</button>
+            <button class="table-btn" onclick="deleteProduct(${index})">Eliminar</button>
+          </td>
+        `;
+      });
+    }
+    
+    function editProduct(index) {
+      const product = products[index];
+      document.getElementById('productName').value = product.name;
+      document.getElementById('purchasePrice').value = product.purchasePrice;
+      document.getElementById('producedQuantity').value = product.quantity;
+      document.getElementById('salePrice').value = product.salePrice;
+      
+      products.splice(index, 1);
+      updateProductTable();
+      updateSummary();
+      updateChart();
+    }
+    
+    function deleteProduct(index) {
+      products.splice(index, 1);
+      updateProductTable();
+      updateSummary();
+      updateChart();
+    }
+    
+    function updateSummary() {
+      let totalProfit = 0;
+      let totalRevenue = 0;
+      let totalCosts = fixedCosts;
+      
+      products.forEach(product => {
+        const profit = (product.salePrice - product.purchasePrice) * product.quantity;
+        totalProfit += profit;
+        totalRevenue += product.salePrice * product.quantity;
+        totalCosts += product.purchasePrice * product.quantity;
+      });
+      
+      const totalMargin = totalRevenue ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
+      const netProfit = totalProfit - fixedCosts; // Calculate Net Profit
+      
+      document.getElementById('totalProfit').textContent = formatNumber(totalProfit);
+      document.getElementById('totalMargin').textContent = totalMargin;
+      document.getElementById('totalCosts').textContent = formatNumber(totalCosts);
+      fixedCostsDisplay.textContent = formatNumber(fixedCosts);
+      document.getElementById('netProfit').textContent = formatNumber(netProfit); // Update Net Profit display
+    }
+    
+    function updateChart() {
+      const ctx = document.getElementById('profitChart').getContext('2d');
+      const labels = products.map(product => product.name);
+      const profits = products.map(product => (product.salePrice - product.purchasePrice) * product.quantity);
+      
+      if (window.myChart) {
+        window.myChart.destroy();
+      }
+      
+      window.myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Ganancia por Producto',
+            data: profits,
+            backgroundColor: 'rgba(22, 91, 51, 0.7)',
+            borderColor: 'rgba(22, 91, 51, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Ganancia ($)'
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51);
+      doc.text('Reporte de PapaNoel sus delicias y variedades', 20, 20);
+
+      doc.setFontSize(12);
+      doc.setTextColor(33, 33, 33);
+      let yPos = 40;
+
+      products.forEach((product, index) => {
+        const profit = (product.salePrice - product.purchasePrice) * product.quantity;
+        const margin = ((profit / (product.salePrice * product.quantity)) * 100).toFixed(2);
+
+        doc.setFillColor(244, 244, 244);
+        doc.rect(15, yPos - 5, 180, 60, 'F');
+
+        doc.text(`Producto ${index + 1}: ${product.name}`, 20, yPos);
+        doc.text(`Precio de compra: $${formatNumber(product.purchasePrice)}`, 30, yPos + 10);
+        doc.text(`Cantidad: ${product.quantity}`, 30, yPos + 20);
+        doc.text(`Precio de venta: $${formatNumber(product.salePrice)}`, 30, yPos + 30);
+        doc.text(`Ganancia: $${formatNumber(profit)}`, 30, yPos + 40);
+        doc.text(`Margen: ${margin}%`, 30, yPos + 50);
+
+        yPos += 70;
+
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+      });
+
+      doc.text('Costos fijos (Fixed Costs): $' + formatNumber(fixedCosts), 20, yPos);
+      yPos += 20;
+
+      const totalProfit = parseFloat(document.getElementById('totalProfit').textContent.replace(/\./g, '').replace(/,/g, '.'));
+      const totalMargin = document.getElementById('totalMargin').textContent;
+      const totalCosts = parseFloat(document.getElementById('totalCosts').textContent.replace(/\./g, '').replace(/,/g, '.'));
+
+      doc.text(`Ganancias Totales: $${formatNumber(totalProfit)}`, 20, yPos + 10);
+      doc.text(`Margen de Ganancia Total: ${totalMargin}%`, 20, yPos + 20);
+      doc.text(`Costos Totales: $${formatNumber(totalCosts)}`, 20, yPos + 30);
+
+      doc.save('reporte_papaschristmasdelights.pdf');
+    }
+  </script>
+</body></html>
